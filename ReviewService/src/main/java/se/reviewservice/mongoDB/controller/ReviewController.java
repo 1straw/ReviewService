@@ -1,7 +1,7 @@
 package se.reviewservice.mongoDB.controller;
 
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import se.reviewservice.mongoDB.model.Review;
 import se.reviewservice.mongoDB.service.ReviewService;
@@ -26,11 +26,13 @@ public class ReviewController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public Review createReview(@RequestBody Review review) {
         return service.createReview(review);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteReview(@PathVariable String id) {
         service.deleteReview(id);
     }
