@@ -1,4 +1,4 @@
-package se.reviewservice.repository;
+package se.reviewservice.H2repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import se.reviewservice.model.Product;
@@ -7,7 +7,7 @@ import se.reviewservice.model.Review;
 import java.time.LocalDate;
 import java.util.List;
 
-public interface ReviewRepository extends JpaRepository<Review, Long> {
+public interface JPAReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByProduct(Product product);
 
     //Recensioner från de senaste två månaderna

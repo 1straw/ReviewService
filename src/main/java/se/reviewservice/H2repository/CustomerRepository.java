@@ -1,4 +1,4 @@
-package se.reviewservice.repository;
+package se.reviewservice.H2repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import se.reviewservice.model.Customer;
