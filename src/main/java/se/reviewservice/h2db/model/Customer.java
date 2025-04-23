@@ -1,4 +1,4 @@
-package se.reviewservice.model;
+package se.reviewservice.h2db.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

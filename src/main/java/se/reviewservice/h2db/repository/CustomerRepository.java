@@ -1,7 +1,7 @@
-package se.reviewservice.repository;
+package se.reviewservice.h2db.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import se.reviewservice.model.Customer;
+import se.reviewservice.h2db.model.Customer;
 
 import java.util.Optional;
 

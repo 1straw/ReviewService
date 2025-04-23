@@ -1,13 +1,13 @@
-package se.reviewservice.repository;
+package se.reviewservice.h2db.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import se.reviewservice.model.Product;
-import se.reviewservice.model.Review;
+import se.reviewservice.h2db.model.Product;
+import se.reviewservice.h2db.model.Review;
 
 import java.time.LocalDate;
 import java.util.List;
 
-public interface ReviewRepository extends JpaRepository<Review, Long> {
+public interface H2ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByProduct(Product product);
 
     //Recensioner från de senaste två månaderna
