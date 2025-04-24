@@ -1,24 +1,22 @@
 package se.reviewservice.mongoDB.model;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
+import java.util.List;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Document(collection = "reviews")
-public class Review {
+@Document(collection = "api_keys")
+public class ApiKey {
     @Id
-    private String id;
+    private String key;
     private String companyId;
+    private List<String> roles;
+    private int usageCount;
 
-    private Customer customer;
-    private Product product;
-    private ReviewDetails review;
-    private Instant createdAt;
 }

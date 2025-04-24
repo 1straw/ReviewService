@@ -6,5 +6,4 @@ import se.reviewservice.mongoDB.model.Review;
 
 @Repository
 public interface ReviewRepository extends MongoRepository<Review, String> {
-    String id(String id);
 }
