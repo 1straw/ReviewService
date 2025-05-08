@@ -14,9 +14,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import se.reviewservice.mongoDB.service.AuthUserService;
 
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -37,6 +41,7 @@ public class JwtFilter extends OncePerRequestFilter {
             jwt = authorizationHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(jwt);
+                logger.debug("Extracted username from JWT: {}", username);
             } catch (Exception e) {
                 logger.error("JWT validation failed", e);
             }
@@ -52,6 +57,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 usernamePasswordAuthenticationToken
                         .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                logger.debug("Authentication successful for user: {}", username);
             }
         }
         filterChain.doFilter(request, response);
