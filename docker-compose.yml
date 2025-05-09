@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    image: reviewservice:1.0
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://db:27017/reviewdb
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mongo:latest
+    container_name: reviewdb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_data:

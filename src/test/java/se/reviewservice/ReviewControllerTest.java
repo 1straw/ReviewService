@@ -32,7 +32,6 @@ public class ReviewControllerTest {
     @Autowired
     private ReviewRepository reviewRepository;
 
-    // Här slipper du skapa datan manuellt i varje test
     @BeforeEach
     public void setup() {
         reviewRepository.deleteAll();
@@ -54,7 +53,6 @@ public class ReviewControllerTest {
     @Test
     @WithMockUser(roles = "USER")
     public void testGetAllReviews() throws Exception {
-        // Här gör vi en HTTP GET-förfrågan för att testa hela vägen från Controller till Repository
         mockMvc.perform(get("/api/v1/reviews"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].customer").isMap())  // Verifiera om customer finns och är ett objekt
@@ -78,20 +76,19 @@ public class ReviewControllerTest {
         // Förutsätt att du har en review som finns i databasen
         String reviewId = "1";
 
-        // Anropa DELETE och kontrollera att status är 204 (No Content)
         mockMvc.perform(delete("/api/v1/reviews/{id}", reviewId))
-                .andExpect(status().isNoContent());  // 204 No Content betyder att raderingen lyckades
+                .andExpect(status().isNoContent());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
     public void testDeleteReviewFail() throws Exception {
-        // Testa en situation där reviewId inte finns
+
         String reviewId = "non-existing-id";
 
-        // Anropa DELETE och kontrollera att status är 404 (Not Found)
+
         mockMvc.perform(delete("/api/v1/reviews/{id}", reviewId))
-                .andExpect(status().isNotFound());  // 404 betyder att objektet inte fanns
+                .andExpect(status().isNotFound());
     }
 }
 
