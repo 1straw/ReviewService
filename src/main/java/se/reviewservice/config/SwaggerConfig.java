@@ -18,12 +18,21 @@ public class SwaggerConfig {
                         .title("Review Service API")
                         .version("1.0")
                         .description("API for review service"))
+                // Lägg till båda autentiseringsmetoderna
                 .addSecurityItem(new SecurityRequirement().addList("apiKey"))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
+                        // API-nyckel schema (som du redan har)
                         .addSecuritySchemes("apiKey", new SecurityScheme()
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)
                                 .name("X-API-KEY")
+                        )
+                        // JWT schema (som du behöver lägga till)
+                        .addSecuritySchemes("bearerAuth", new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
                         )
                 );
     }
