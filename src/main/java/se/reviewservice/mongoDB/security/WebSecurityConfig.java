@@ -27,9 +27,19 @@ public class WebSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/v1/reviews").authenticated()
+                        // Tillåt Swagger UI och dess resurser utan autentisering
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Tillåt inloggning utan autentisering
+                        .requestMatchers("/api/auth/login").permitAll()
+                        // OBS! Vi tar bort /api/auth/register från permitAll för att blockera publik registrering
+                        // .requestMatchers("/api/auth/register").permitAll()
+                        // Lägg till specialendpoints för GET-anrop
+                        .requestMatchers("GET", "/api/v1/products/*/reviews").hasAnyRole("USER", "ADMIN", "FRONTEND_GROUP")
+                        // Lägg till specialregler för vilka roller som kan ändra data
+                        .requestMatchers("POST", "/api/v1/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("PUT", "/api/v1/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("DELETE", "/api/v1/**").hasAnyRole("USER", "ADMIN")
+                        // Alla andra anrop kräver autentisering
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
