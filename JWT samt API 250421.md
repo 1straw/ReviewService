@@ -1,7 +1,7 @@
 # Autentiseringslösning (JWT & API-nyckel)
 
 Jag har implementerat en autentiseringslösning som stödjer både **JWT** och **API-nyckel-autentisering**.
-Så vilken lösning kunden än vill ha så fungerar det  med båda.
+Så vilken lösning kunden än vill ha så fungerar det med båda.
 
 ---
 
