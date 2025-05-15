@@ -28,7 +28,7 @@ public class WebSecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // Tillåt Swagger UI och dess resurser utan autentisering
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // Tillåt inloggning utan autentisering
                         .requestMatchers("/api/auth/login").permitAll()
                         // OBS! Vi tar bort /api/auth/register från permitAll för att blockera publik registrering

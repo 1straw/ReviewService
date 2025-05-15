@@ -1,6 +1,5 @@
 package se.reviewservice.mongoDB.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +11,7 @@ public class ProductReviewController {
 
     @Autowired
     private ProductReviewService productReviewService;
-    @Hidden
+
     @GetMapping("/{productId}/reviews")
     public ResponseEntity<?> getProductReviews(
             @PathVariable String productId,
