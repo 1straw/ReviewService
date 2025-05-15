@@ -1,4 +1,5 @@
 package se.reviewservice.mongoDB.security;
+import org.springframework.http.HttpMethod;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -36,9 +37,11 @@ public class WebSecurityConfig {
                         // Lägg till specialendpoints för GET-anrop
                         .requestMatchers("GET", "/api/v1/products/*/reviews").hasAnyRole("USER", "ADMIN", "FRONTEND_GROUP")
                         // Lägg till specialregler för vilka roller som kan ändra data
-                        .requestMatchers("POST", "/api/v1/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("PUT", "/api/v1/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("DELETE", "/api/v1/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/*/reviews").hasAnyRole("USER", "ADMIN", "FRONTEND_GROUP") // eller begränsa om du vill
+                        .requestMatchers(HttpMethod.POST, "/api/v1/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/**").hasAnyRole("USER", "ADMIN")
+
                         // Alla andra anrop kräver autentisering
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session

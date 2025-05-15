@@ -13,8 +13,21 @@ public class ClaudeClient {
     private final WebClient webClient;
 
     public ClaudeClient(WebClient.Builder builder) {
-        Dotenv dotenv = Dotenv.load();
-        String apiKey = dotenv.get("ANTHROPIC_API_KEY");
+//        Dotenv dotenv = Dotenv.load();
+//        String apiKey = dotenv.get("ANTHROPIC_API_KEY");
+        Dotenv dotenv = null;
+        try {
+            dotenv = Dotenv.load();
+        } catch (Exception ignored) {
+            // Dotenv kanske inte finns i containern
+        }
+
+        String apiKey = dotenv != null ? dotenv.get("ANTHROPIC_API_KEY") : null;
+
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getenv("ANTHROPIC_API_KEY");
+        }
+
 
         this.webClient = builder
                 .baseUrl("https://api.anthropic.com/v1")

@@ -3,15 +3,9 @@ package se.reviewservice.mongoDB.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import se.reviewservice.mongoDB.repository.ReviewRepository;
-import se.reviewservice.mongoDB.model.Product;
 import se.reviewservice.mongoDB.model.Review;
-import se.reviewservice.mongoDB.model.ReviewDetails;
-import se.reviewservice.mongoDB.model.Customer;
 
-import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service

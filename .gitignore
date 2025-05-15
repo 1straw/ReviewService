@@ -20,6 +20,7 @@ target/
 *.ipr
 #SECRETS
 .env
+docker-compose.yml
 
 ### NetBeans ###
 /nbproject/private/
