@@ -1,5 +1,6 @@
 package se.reviewservice.mongoDB.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import se.reviewservice.mongoDB.service.ApiKeyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Hidden
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "API för autentisering och registrering")
@@ -41,7 +43,7 @@ public class AuthController {
     @Autowired
     private ApiKeyService apiKeyService;
 
-    @Operation(summary = "Login", description = "Logga in och få en JWT-token")
+    @Operation(hidden = true, summary = "Login", description = "Logga in och få en JWT-token")
     @PostMapping("/login")
     public ResponseEntity<?> createAuthToken(@RequestBody AuthRequest authRequest) throws Exception {
         try {
@@ -60,7 +62,7 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(jwt));
     }
 
-    @Operation(summary = "Register", description = "Registrera en ny användare")
+    @Operation(hidden = true, summary = "Register", description = "Registrera en ny användare")
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
         try {

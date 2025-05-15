@@ -1,5 +1,6 @@
 package se.reviewservice.mongoDB.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,7 +42,7 @@ public class ReviewController {
         }
     }
 
-    @Operation(
+    @Operation( hidden = true,
             summary = "Post review",
             description = "Create a review",
             security = {
@@ -56,7 +57,7 @@ public class ReviewController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdReview); // 201 Created
     }
 
-    @Operation(
+    @Operation(hidden = true ,
             summary = "Delete review",
             description = "Delete review by id",
             security = {
