@@ -1,5 +1,6 @@
 package se.reviewservice.mongoDB.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.web.bind.annotation.*;
 import se.reviewservice.dto.ExternalProductRequestWithWeather;
 import se.reviewservice.dto.ExternalProductResponse;
@@ -7,7 +8,7 @@ import se.reviewservice.dto.IncomingProductRequest;
 import se.reviewservice.dto.ReviewRequest;
 import se.reviewservice.mongoDB.service.AiReviewService;
 import se.reviewservice.mongoDB.service.ReviewService;
-
+@Hidden
 @RestController
 @RequestMapping("/api/v1/ai")
 public class AiReviewController {
