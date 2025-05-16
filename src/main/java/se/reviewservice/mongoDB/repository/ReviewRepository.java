@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ReviewRepository extends MongoRepository<Review, String> {
     List<Review> findByProductId(String productId);
+    long countByProductId(String productId);  // Lägg till denna metod
 }
