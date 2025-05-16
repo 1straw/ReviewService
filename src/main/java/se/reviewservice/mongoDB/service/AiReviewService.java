@@ -1,6 +1,5 @@
 package se.reviewservice.mongoDB.service;
 
-
 import org.springframework.stereotype.Service;
 import se.reviewservice.client.ClaudeClient;
 import se.reviewservice.dto.ExternalProductResponse;
@@ -19,13 +18,11 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 @Service
 public class AiReviewService {
 
     private final ClaudeClient claudeClient;
     private final ReviewRepository reviewRepository;
-
 
     public AiReviewService(ClaudeClient claudeClient, ReviewRepository reviewRepository) {
         this.claudeClient = claudeClient;
@@ -55,7 +52,6 @@ public class AiReviewService {
         reviews.forEach(reviewRepository::save);
 
         return "Claude generated and saved " + reviews.size() + " reviews.";
-
     }
 
     public String generateReviewFromExternalProduct(ExternalProductResponse product, String weather) {
@@ -106,7 +102,14 @@ public class AiReviewService {
                             UUID.randomUUID().toString(),
                             "demo company", //ersätt sedan med faktiskt companyID
                             new Customer(name, ""),
-                            new Product(productName, BigDecimal.ZERO, Map.of("category", "T-shirt")), //kategori ev. hårdkodad
+                            new Product(
+                                    UUID.randomUUID().toString(),  // id
+                                    productName,                   // name
+                                    "Automatiskt genererad produktbeskrivning", // description
+                                    BigDecimal.ZERO,               // price
+                                    "default-group",               // groupId
+                                    Map.of("category", "T-shirt")  // attributes (Map<String, Object>)
+                            ),
                             new ReviewDetails(rating, text),
                             Instant.now()
                     );
@@ -143,5 +146,4 @@ public class AiReviewService {
 
         return "Claude generated and saved " + reviews.size() + " reviews.";
     }
-
 }
