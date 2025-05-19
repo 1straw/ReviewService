@@ -12,6 +12,7 @@ import se.reviewservice.mongoDB.repository.ReviewRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,22 +31,64 @@ public class AiReviewService {
     }
 
     public String generateReview(String productName, String weather) {
-        String prompt = """
-        Skriv exakt 5 realistiska kundrecensioner om produkten "%s" baserat på att vädret är "%s".
+        return generateReviewWithGroup(productName, weather, null);
+    }
 
-        För varje recension, inkludera:
-        - Namn på kunden
-        - Betyg (1 till 5)
-        - Själva recensionstexten
+    public String generateReviewWithGroup(String productName, String weather, String groupId) {
+        // Hantera null eller tomt produktnamn
+        if (productName == null || productName.trim().isEmpty()) {
+            if (groupId != null && groupId.equalsIgnoreCase("group5")) {
+                // För grupp 5, använd en generisk produktbeskrivning utan att nämna "Grupp 5"
+                productName = "produkten";
+            } else {
+                productName = "produkten";
+            }
+            System.out.println("Använder generiskt produktnamn eftersom inget namn finns");
+        }
 
-        Format:
-        Namn: <namn>
-        Betyg: <1–5>
-        Recension: <text>
+        // Anpassa prompt baserat på grupp
+        String promptTemplate;
+        if (groupId != null && groupId.equalsIgnoreCase("group5")) {
+            // För grupp 5, se till att inte nämna "Grupp 5" i recensionen
+            promptTemplate = """
+            Skriv exakt 5 realistiska kundrecensioner om "%s" baserat på att vädret är "%s".
 
-        Separera varje recension med två radbrytningar.
-        """.formatted(productName, weather);
+            VIKTIGT: Recensionerna ska låta som äkta kundrecensioner. Nämn INTE "Grupp 5" eller "Produkt från Grupp 5" i texten. 
+            Skriv som om det är en riktig produkt med ett riktigt namn. Om produkten heter "Produkt från Grupp 5", referera till den 
+            bara som "produkten" eller ett lämpligt produktnamn.
 
+            För varje recension, inkludera:
+            - Namn på kunden
+            - Betyg (1 till 5)
+            - Själva recensionstexten
+
+            Format:
+            Namn: <namn>
+            Betyg: <1–5>
+            Recension: <text>
+
+            Separera varje recension med två radbrytningar.
+            """;
+        } else {
+            // För andra grupper, använd normal prompt
+            promptTemplate = """
+            Skriv exakt 5 realistiska kundrecensioner om "%s" baserat på att vädret är "%s".
+
+            För varje recension, inkludera:
+            - Namn på kunden
+            - Betyg (1 till 5)
+            - Själva recensionstexten
+
+            Format:
+            Namn: <namn>
+            Betyg: <1–5>
+            Recension: <text>
+
+            Separera varje recension med två radbrytningar.
+            """;
+        }
+
+        String prompt = String.format(promptTemplate, productName, weather);
         String response = claudeClient.askClaude(prompt);
 
         List<Review> reviews = parseReviews(response, productName);
@@ -55,28 +98,58 @@ public class AiReviewService {
     }
 
     public String generateReviewFromExternalProduct(ExternalProductResponse product, String weather) {
-        String prompt =  """
-        Skriv exakt 5 realistiska kundrecensioner om produkten "%s" som beskrivs såhär: "%s".
-        Priset är %.2f %s och vädret är "%s".
-        
-        För varje recension, inkludera:
-        - Namn på kunden
-        - Betyg (1 till 5)
-        - Själva recensionstexten
+        String prompt;
+        if (product.getName() != null && product.getName().contains("Grupp 5")) {
+            // Om produktnamnet innehåller "Grupp 5", använd en anpassad prompt
+            prompt = """
+            Skriv exakt 5 realistiska kundrecensioner om produkten som beskrivs såhär: "%s".
+            Priset är %.2f %s och vädret är "%s".
+            
+            VIKTIGT: Recensionerna ska låta som äkta kundrecensioner. Nämn INTE "Grupp 5" eller "Produkt från Grupp 5" i texten. 
+            Skriv som om det är en riktig produkt med ett riktigt namn.
+            
+            För varje recension, inkludera:
+            - Namn på kunden
+            - Betyg (1 till 5)
+            - Själva recensionstexten
 
-        Format:
-        Namn: <namn>
-        Betyg: <1–5>
-        Recension: <text>
+            Format:
+            Namn: <namn>
+            Betyg: <1–5>
+            Recension: <text>
 
-        Separera varje recension med två radbrytningar.
-    """.formatted(
-                product.getName(),
-                product.getDescription(),
-                product.getPrice(),
-                product.getCurrency(),
-                weather
-        );
+            Separera varje recension med två radbrytningar.
+            """.formatted(
+                    product.getDescription(),
+                    product.getPrice(),
+                    product.getCurrency(),
+                    weather
+            );
+        } else {
+            // Vanlig prompt för övriga produkter
+            prompt = """
+            Skriv exakt 5 realistiska kundrecensioner om produkten "%s" som beskrivs såhär: "%s".
+            Priset är %.2f %s och vädret är "%s".
+            
+            För varje recension, inkludera:
+            - Namn på kunden
+            - Betyg (1 till 5)
+            - Själva recensionstexten
+
+            Format:
+            Namn: <namn>
+            Betyg: <1–5>
+            Recension: <text>
+
+            Separera varje recension med två radbrytningar.
+            """.formatted(
+                    product.getName(),
+                    product.getDescription(),
+                    product.getPrice(),
+                    product.getCurrency(),
+                    weather
+            );
+        }
 
         String response = claudeClient.askClaude(prompt);
         List<Review> reviews = parseReviews(response, product.getName());
@@ -98,47 +171,104 @@ public class AiReviewService {
                     int rating = Integer.parseInt(match.group(2).trim());
                     String text = match.group(3).trim();
 
-                    return new Review(
-                            UUID.randomUUID().toString(),
-                            "demo company", //ersätt sedan med faktiskt companyID
-                            new Customer(name, ""),
-                            new Product(
-                                    UUID.randomUUID().toString(),  // id
-                                    productName,                   // name
-                                    "Automatiskt genererad produktbeskrivning", // description
-                                    BigDecimal.ZERO,               // price
-                                    "default-group",               // groupId
-                                    Map.of("category", "T-shirt")  // attributes (Map<String, Object>)
-                            ),
-                            new ReviewDetails(rating, text),
-                            Instant.now()
+                    // Skapa produkt för recensionen
+                    String productId = UUID.randomUUID().toString();
+
+                    Product product = new Product(
+                            productId,                   // id
+                            productName,                 // name
+                            "Automatiskt genererad produktbeskrivning", // description
+                            BigDecimal.ZERO,             // price
+                            "default-group",             // groupId
+                            Map.of("category", "T-shirt") // attributes
                     );
+
+                    // Skapa en ny recension med den befintliga konstruktorn
+                    Review review = new Review(
+                            UUID.randomUUID().toString(), // id
+                            "demo company",              // companyId
+                            new Customer(name, ""),      // customer
+                            product,                     // product
+                            new ReviewDetails(rating, text), // reviewDetails
+                            Instant.now()                // createdAt
+                    );
+
+                    // Sätt productId till produktnamnet manuellt
+                    review.setProductId(productName);
+
+                    // Sätt alla relevanta fält explicit
+                    review.setReviewerName(name);
+                    review.setRating(rating);
+                    review.setComment(text);
+                    review.setTitle("Review");
+                    review.setDate(LocalDate.now());
+
+                    return review;
                 }).toList();
     }
 
     public String generateReviewFromIncomingProduct(IncomingProductRequest product, String weather) {
-        String prompt = """
-        Skriv exakt 5 realistiska kundrecensioner om produkten "%s".
-        Kategorin är "%s", och den har dessa taggar: %s.
-        Vädret är "%s".
+        String promptTemplate;
+        if (product.getProductName() != null && product.getProductName().contains("Grupp 5")) {
+            // Om produktnamnet innehåller "Grupp 5", använd en anpassad prompt
+            promptTemplate = """
+            Skriv exakt 5 realistiska kundrecensioner.
+            Kategorin är "%s", och den har dessa taggar: %s.
+            Vädret är "%s".
+            
+            VIKTIGT: Recensionerna ska låta som äkta kundrecensioner. Nämn INTE "Grupp 5" eller "Produkt från Grupp 5" i texten. 
+            Skriv som om det är en riktig produkt med ett riktigt namn.
+            
+            För varje recension, inkludera:
+            - Namn på kunden
+            - Betyg (1 till 5)
+            - Själva recensionstexten
 
-        För varje recension, inkludera:
-        - Namn på kunden
-        - Betyg (1 till 5)
-        - Själva recensionstexten
+            Format:
+            Namn: <namn>
+            Betyg: <1–5>
+            Recension: <text>
 
-        Format:
-        Namn: <namn>
-        Betyg: <1–5>
-        Recension: <text>
+            Separera varje recension med två radbrytningar.
+            """;
+        } else {
+            // Vanlig prompt för övriga produkter
+            promptTemplate = """
+            Skriv exakt 5 realistiska kundrecensioner om produkten "%s".
+            Kategorin är "%s", och den har dessa taggar: %s.
+            Vädret är "%s".
 
-        Separera varje recension med två radbrytningar.
-    """.formatted(
-                product.getProductName(),
-                product.getCategory(),
-                String.join(", ", product.getTags()),
-                weather
-        );
+            För varje recension, inkludera:
+            - Namn på kunden
+            - Betyg (1 till 5)
+            - Själva recensionstexten
+
+            Format:
+            Namn: <namn>
+            Betyg: <1–5>
+            Recension: <text>
+
+            Separera varje recension med två radbrytningar.
+            """;
+        }
+
+        String prompt;
+        if (product.getProductName() != null && product.getProductName().contains("Grupp 5")) {
+            prompt = String.format(
+                    promptTemplate,
+                    product.getCategory(),
+                    String.join(", ", product.getTags()),
+                    weather
+            );
+        } else {
+            prompt = String.format(
+                    promptTemplate,
+                    product.getProductName(),
+                    product.getCategory(),
+                    String.join(", ", product.getTags()),
+                    weather
+            );
+        }
 
         String response = claudeClient.askClaude(prompt);
         List<Review> reviews = parseReviews(response, product.getProductName());
