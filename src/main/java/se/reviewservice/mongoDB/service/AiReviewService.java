@@ -12,6 +12,7 @@ import se.reviewservice.mongoDB.repository.ReviewRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -98,21 +99,39 @@ public class AiReviewService {
                     int rating = Integer.parseInt(match.group(2).trim());
                     String text = match.group(3).trim();
 
-                    return new Review(
-                            UUID.randomUUID().toString(),
-                            "demo company", //ersätt sedan med faktiskt companyID
-                            new Customer(name, ""),
-                            new Product(
-                                    UUID.randomUUID().toString(),  // id
-                                    productName,                   // name
-                                    "Automatiskt genererad produktbeskrivning", // description
-                                    BigDecimal.ZERO,               // price
-                                    "default-group",               // groupId
-                                    Map.of("category", "T-shirt")  // attributes (Map<String, Object>)
-                            ),
-                            new ReviewDetails(rating, text),
-                            Instant.now()
+                    // Skapa produkt för recensionen
+                    String productId = UUID.randomUUID().toString();
+
+                    Product product = new Product(
+                            productId,                   // id
+                            productName,                 // name
+                            "Automatiskt genererad produktbeskrivning", // description
+                            BigDecimal.ZERO,             // price
+                            "default-group",             // groupId
+                            Map.of("category", "T-shirt") // attributes
                     );
+
+                    // Skapa en ny recension med den befintliga konstruktorn
+                    Review review = new Review(
+                            UUID.randomUUID().toString(), // id
+                            "demo company",              // companyId
+                            new Customer(name, ""),      // customer
+                            product,                     // product
+                            new ReviewDetails(rating, text), // reviewDetails
+                            Instant.now()                // createdAt
+                    );
+
+                    // Sätt productId till produktnamnet manuellt
+                    review.setProductId(productName);
+
+                    // Sätt alla relevanta fält explicit
+                    review.setReviewerName(name);
+                    review.setRating(rating);
+                    review.setComment(text);
+                    review.setTitle("Review");
+                    review.setDate(LocalDate.now());
+
+                    return review;
                 }).toList();
     }
 
