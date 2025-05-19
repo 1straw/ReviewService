@@ -8,6 +8,9 @@ import se.reviewservice.mongoDB.model.Product;
 import se.reviewservice.mongoDB.model.Review;
 import se.reviewservice.mongoDB.repository.ProductRepository;
 import se.reviewservice.mongoDB.repository.ReviewRepository;
+import se.reviewservice.mongoDB.service.strategy.Group4ResponseStrategy;
+import se.reviewservice.mongoDB.service.strategy.Group5ResponseStrategy;
+import se.reviewservice.mongoDB.service.strategy.Group6ResponseStrategy;
 import se.reviewservice.mongoDB.service.strategy.GroupResponseStrategy;
 
 import java.util.ArrayList;
@@ -58,35 +61,39 @@ public class ProductReviewService {
         List<Review> reviews = new ArrayList<>();
 
         // Metod 1: Sök med produkt-ID
-        List<Review> reviewsById = reviewRepository.findByProductId(productId);
+        System.out.println("Debug - sökande efter recensioner med produktID: " + product.getId());
+        List<Review> reviewsById = reviewRepository.findByProductId(product.getId());
         reviews.addAll(reviewsById);
 
         // Metod 2: Sök med produktnamn
         List<Review> reviewsByName = new ArrayList<>();
-        if (product.getName() != null) {
+        if (product.getName() != null && !product.getName().isEmpty()) {
+            System.out.println("Debug - sökande efter recensioner med produktNamn: " + product.getName());
             reviewsByName = reviewRepository.findByProductId(product.getName());
             reviews.addAll(reviewsByName);
+        } else {
+            System.out.println("Produkten har inget namn, söker bara på ID: " + product.getId());
         }
 
         System.out.println("Hittade " + reviewsById.size() + " recensioner med produkt-ID");
         System.out.println("Hittade " + reviewsByName.size() + " recensioner med produktnamn");
         System.out.println("Totalt " + reviews.size() + " recensioner");
 
-        // Om inga recensioner finns eller för få, använd AI för att generera
-        if (reviews.isEmpty() || reviews.size() < 5) {
+        // Om inga recensioner finns, använd AI för att generera
+        if (reviews.isEmpty()) {
             // Skapa en enkel vädertext - i ett riktigt system skulle detta komma från en vädertjänst
             String weather = "soligt och " + (20 + (int)(Math.random() * 10)) + " grader";
 
             // Använd befintlig AI-tjänst för att generera recensioner
-            aiReviewService.generateReview(product.getName(), weather);
+            aiReviewService.generateReviewWithGroup(product.getName(), weather, normalizedGroup);
 
             // Hämta de nya recensionerna från databasen
-            reviewsById = reviewRepository.findByProductId(productId);
+            reviewsById = reviewRepository.findByProductId(product.getId());
             reviewsByName = new ArrayList<>();
 
             reviews = new ArrayList<>(reviewsById);
 
-            if (product.getName() != null) {
+            if (product.getName() != null && !product.getName().isEmpty()) {
                 reviewsByName = reviewRepository.findByProductId(product.getName());
                 reviews.addAll(reviewsByName);
             }
@@ -115,7 +122,30 @@ public class ProductReviewService {
             return ResponseEntity.badRequest().body("Unsupported group: " + normalizedGroup);
         }
 
-        Object response = matchingStrategy.buildResponse(paginatedReviews, productId);
+        // Förbereder svaret
+        Map<String, Object> response = new HashMap<>();
+
+        // Lägger till produktinformation baserat på vilken grupp det är
+        response.put("id", product.getId());
+        response.put("name", product.getName() != null ? product.getName() : "Produkt från Grupp 5 - " + product.getId());
+        response.put("description", product.getDescription());
+
+        // Lägg bara till pris om det INTE är grupp 4
+        if (!(matchingStrategy instanceof Group4ResponseStrategy)) {
+            response.put("price", product.getPrice());
+        }
+
+        // Formaterar recensioner enligt gruppens strategy
+        Object formattedReviews = matchingStrategy.buildResponse(paginatedReviews, product.getId());
+
+        // För grupp 4, lägg reviews direkt i svaret
+        if (matchingStrategy instanceof Group4ResponseStrategy || matchingStrategy instanceof Group6ResponseStrategy) {
+            response.put("reviews", formattedReviews);
+        } else {
+            // För grupp 5 och andra, lägg till recensioner som en separat lista
+            response.put("reviews", formattedReviews);
+        }
+
         return ResponseEntity.ok(response);
     }
 
@@ -135,9 +165,6 @@ public class ProductReviewService {
             return ResponseEntity.ok(new ArrayList<>());
         }
 
-        // Skapa svarsstrukturen
-        List<Map<String, Object>> result = new ArrayList<>();
-
         // Hitta rätt strategy för gruppen
         GroupResponseStrategy strategy = null;
         for (GroupResponseStrategy s : responseStrategies) {
@@ -153,6 +180,9 @@ public class ProductReviewService {
             return ResponseEntity.badRequest().body("Unsupported group: " + normalizedGroup);
         }
 
+        // Skapa svarsstrukturen baserat på gruppens typ
+        List<Map<String, Object>> result = new ArrayList<>();
+
         // För varje produkt, hämta recensioner och formatera enligt gruppens krav
         for (Product product : products) {
             System.out.println("Behandlar produkt: " + product.getId() + " - " + product.getName());
@@ -161,36 +191,80 @@ public class ProductReviewService {
             List<Review> reviews = new ArrayList<>();
 
             // Metod 1: Sök med produkt-ID
+            System.out.println("  Debug - sökande efter recensioner med produktID: " + product.getId());
             List<Review> reviewsById = reviewRepository.findByProductId(product.getId());
             reviews.addAll(reviewsById);
 
             // Metod 2: Sök med produktnamn
             List<Review> reviewsByName = new ArrayList<>();
-            if (product.getName() != null) {
+            if (product.getName() != null && !product.getName().isEmpty()) {
+                System.out.println("  Debug - sökande efter recensioner med produktNamn: " + product.getName());
                 reviewsByName = reviewRepository.findByProductId(product.getName());
                 reviews.addAll(reviewsByName);
+            } else {
+                System.out.println("  Produkten har inget namn, söker bara på ID: " + product.getId());
             }
 
             System.out.println("  Hittade " + reviewsById.size() + " recensioner med produkt-ID");
             System.out.println("  Hittade " + reviewsByName.size() + " recensioner med produktnamn");
             System.out.println("  Totalt " + reviews.size() + " recensioner");
 
-            // Om inga recensioner finns, fortsätt till nästa produkt
+            // Om inga recensioner finns, generera nya
             if (reviews.isEmpty()) {
-                System.out.println("  Inga recensioner hittades, hoppar över produkt");
-                continue;
+                System.out.println("  Inga recensioner hittades, genererar nya");
+                // Skapa en enkel vädertext
+                String weather = "soligt och " + (20 + (int)(Math.random() * 10)) + " grader";
+                // Generera recensioner
+                aiReviewService.generateReview(product.getName(), weather);
+
+                // Hämta de nya recensionerna
+                reviewsById = reviewRepository.findByProductId(product.getId());
+                reviews = new ArrayList<>(reviewsById);
+
+                if (product.getName() != null && !product.getName().isEmpty()) {
+                    reviewsByName = reviewRepository.findByProductId(product.getName());
+                    reviews.addAll(reviewsByName);
+                }
+
+                System.out.println("  Efter generering, hittade " + reviews.size() + " recensioner");
+
+                // Om fortfarande inga recensioner, hoppa över denna produkt
+                if (reviews.isEmpty()) {
+                    System.out.println("  Kunde inte generera recensioner, hoppar över produkt");
+                    continue;
+                }
+            }
+
+            // Skapa produktobjektet med recensioner
+            Map<String, Object> productData = new HashMap<>();
+
+            // Gemensam produktinformation för alla grupper
+            productData.put("id", product.getId());
+            productData.put("name", product.getName() != null ? product.getName() : "Produkt från Grupp 5 - " + product.getId());
+            productData.put("description", product.getDescription());
+
+            // Lägg bara till pris om det INTE är grupp 4
+            if (!(strategy instanceof Group4ResponseStrategy)) {
+                productData.put("price", product.getPrice());
             }
 
             // Formatera recensioner enligt gruppens strategy
             Object formattedReviews = strategy.buildResponse(reviews, product.getId());
 
-            // Skapa produktobjektet med recensioner
-            Map<String, Object> productData = new HashMap<>();
-            productData.put("id", product.getId());
-            productData.put("name", product.getName());
-            productData.put("description", product.getDescription());
-            productData.put("price", product.getPrice());
-            productData.put("reviews", formattedReviews);
+            // Anpassa svarsstrukturen för olika grupper
+            if (strategy instanceof Group4ResponseStrategy) {
+                // För grupp 4, lägg reviews direkt i svaret
+                productData.put("reviews", formattedReviews);
+            } else if (strategy instanceof Group5ResponseStrategy) {
+                // För grupp 5, lägg till recensioner som en separat lista
+                productData.put("reviews", formattedReviews);
+            } else if (strategy instanceof Group6ResponseStrategy) {
+                // För grupp 6, lägg reviews direkt i svaret
+                productData.put("reviews", formattedReviews);
+            } else {
+                // Generisk hantering för andra strategier
+                productData.put("reviews", formattedReviews);
+            }
 
             result.add(productData);
         }

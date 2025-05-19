@@ -5,7 +5,12 @@ import java.util.List;
 
 @Data
 public class Group4Response {
-    private Double averageRating;
-    private Integer totalReviews;
+    // Formaterat betyg som stjärnor
+    private String formattedRating;
+
+    // Antal recensioner med "st" suffix
+    private String totalReviews;
+
+    // Lista med recensioner (bara text)
     private List<Group4Review> reviews;
 }

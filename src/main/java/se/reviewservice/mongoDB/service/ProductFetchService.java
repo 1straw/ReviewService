@@ -157,251 +157,38 @@ public class ProductFetchService {
     }
 
     private void fetchGroup5Products(String endpoint, String groupId) {
-        // Testa alla möjliga sätt att skicka API-nyckeln för grupp 5
         try {
-            // Försök 1: X-API-Key header utan "Bearer"
-            HttpHeaders headers1 = new HttpHeaders();
-            headers1.set("X-API-Key", group5ApiKey);
+            // Använd bara det format som vi vet fungerar
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("x-functions-key", group5ApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Accept", "application/json");
 
-            HttpEntity<String> entity1 = new HttpEntity<>(headers1);
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            try {
-                ResponseEntity<Group5ProductResponse[]> response1 = restTemplate.exchange(
-                        endpoint,
-                        HttpMethod.GET,
-                        entity1,
-                        Group5ProductResponse[].class
-                );
+            System.out.println("Försöker hämta produkter från grupp 5 med x-functions-key: " + group5ApiKey);
+            ResponseEntity<Group5ProductResponse[]> response = restTemplate.exchange(
+                    endpoint,
+                    HttpMethod.GET,
+                    entity,
+                    Group5ProductResponse[].class
+            );
 
-                if (response1.getStatusCode() == HttpStatus.OK && response1.getBody() != null) {
-                    Group5ProductResponse[] products = response1.getBody();
-                    processGroup5Products(products, groupId);
-                    return;
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Group5ProductResponse[] products = response.getBody();
+
+                // Logga alla produkter för att se vad API:et faktiskt returnerar
+                for (Group5ProductResponse product : products) {
+                    System.out.println("Produkt från grupp 5 API - ID: " + product.getId() +
+                            ", Namn: " + product.getName());
                 }
-            } catch (Exception e) {
-                System.out.println("Försök 1 för grupp 5 misslyckades: " + e.getMessage());
+
+                processGroup5Products(products, groupId);
+                System.out.println("Lyckades hämta " + products.length + " produkter från grupp 5");
+                return;
             }
-
-            // Försök 2: API-Key header (med stor bokstav)
-            HttpHeaders headers2 = new HttpHeaders();
-            headers2.set("API-Key", group5ApiKey);
-
-            HttpEntity<String> entity2 = new HttpEntity<>(headers2);
-
-            try {
-                ResponseEntity<Group5ProductResponse[]> response2 = restTemplate.exchange(
-                        endpoint,
-                        HttpMethod.GET,
-                        entity2,
-                        Group5ProductResponse[].class
-                );
-
-                if (response2.getStatusCode() == HttpStatus.OK && response2.getBody() != null) {
-                    Group5ProductResponse[] products = response2.getBody();
-                    processGroup5Products(products, groupId);
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 2 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            // Försök 3: Authorization header med "Bearer"
-            HttpHeaders headers3 = new HttpHeaders();
-            headers3.set("Authorization", "Bearer " + group5ApiKey);
-
-            HttpEntity<String> entity3 = new HttpEntity<>(headers3);
-
-            try {
-                ResponseEntity<Group5ProductResponse[]> response3 = restTemplate.exchange(
-                        endpoint,
-                        HttpMethod.GET,
-                        entity3,
-                        Group5ProductResponse[].class
-                );
-
-                if (response3.getStatusCode() == HttpStatus.OK && response3.getBody() != null) {
-                    Group5ProductResponse[] products = response3.getBody();
-                    processGroup5Products(products, groupId);
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 3 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            // Försök 4: api-key header (små bokstäver)
-            HttpHeaders headers4 = new HttpHeaders();
-            headers4.set("api-key", group5ApiKey);
-
-            HttpEntity<String> entity4 = new HttpEntity<>(headers4);
-
-            try {
-                ResponseEntity<Group5ProductResponse[]> response4 = restTemplate.exchange(
-                        endpoint,
-                        HttpMethod.GET,
-                        entity4,
-                        Group5ProductResponse[].class
-                );
-
-                if (response4.getStatusCode() == HttpStatus.OK && response4.getBody() != null) {
-                    Group5ProductResponse[] products = response4.getBody();
-                    processGroup5Products(products, groupId);
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 4 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            // Försök 5: APIKey header (utan bindestreck)
-            HttpHeaders headers5 = new HttpHeaders();
-            headers5.set("APIKey", group5ApiKey);
-
-            HttpEntity<String> entity5 = new HttpEntity<>(headers5);
-
-            try {
-                ResponseEntity<Group5ProductResponse[]> response5 = restTemplate.exchange(
-                        endpoint,
-                        HttpMethod.GET,
-                        entity5,
-                        Group5ProductResponse[].class
-                );
-
-                if (response5.getStatusCode() == HttpStatus.OK && response5.getBody() != null) {
-                    Group5ProductResponse[] products = response5.getBody();
-                    processGroup5Products(products, groupId);
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 5 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            // Försök 6: Som query parameter med olika parameternamn
-            try {
-                String urlWithApiKey1 = UriComponentsBuilder.fromHttpUrl(endpoint)
-                        .queryParam("apiKey", group5ApiKey)
-                        .build()
-                        .toUriString();
-
-                ResponseEntity<Group5ProductResponse[]> response6 = restTemplate.exchange(
-                        urlWithApiKey1,
-                        HttpMethod.GET,
-                        null,
-                        Group5ProductResponse[].class
-                );
-
-                if (response6.getStatusCode() == HttpStatus.OK && response6.getBody() != null) {
-                    Group5ProductResponse[] products = response6.getBody();
-                    processGroup5Products(products, groupId);
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 6 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            try {
-                String urlWithApiKey2 = UriComponentsBuilder.fromHttpUrl(endpoint)
-                        .queryParam("api-key", group5ApiKey)
-                        .build()
-                        .toUriString();
-
-                ResponseEntity<Group5ProductResponse[]> response7 = restTemplate.exchange(
-                        urlWithApiKey2,
-                        HttpMethod.GET,
-                        null,
-                        Group5ProductResponse[].class
-                );
-
-                if (response7.getStatusCode() == HttpStatus.OK && response7.getBody() != null) {
-                    Group5ProductResponse[] products = response7.getBody();
-                    processGroup5Products(products, groupId);
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 7 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            try {
-                String urlWithApiKey3 = UriComponentsBuilder.fromHttpUrl(endpoint)
-                        .queryParam("key", group5ApiKey)
-                        .build()
-                        .toUriString();
-
-                ResponseEntity<Group5ProductResponse[]> response8 = restTemplate.exchange(
-                        urlWithApiKey3,
-                        HttpMethod.GET,
-                        null,
-                        Group5ProductResponse[].class
-                );
-
-                if (response8.getStatusCode() == HttpStatus.OK && response8.getBody() != null) {
-                    Group5ProductResponse[] products = response8.getBody();
-                    processGroup5Products(products, groupId);
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 8 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            // Försök 9: X-API-KEY header (alla stora bokstäver)
-            HttpHeaders headers9 = new HttpHeaders();
-            headers9.set("X-API-KEY", group5ApiKey);
-            // Lägg till standard Accept och Content-Type headers
-            headers9.setContentType(MediaType.APPLICATION_JSON);
-            headers9.set("Accept", "application/json");
-
-            HttpEntity<String> entity9 = new HttpEntity<>(headers9);
-
-            try {
-                System.out.println("Försök 9: X-API-KEY (alla stora): " + group5ApiKey);
-                ResponseEntity<Group5ProductResponse[]> response9 = restTemplate.exchange(
-                        endpoint,
-                        HttpMethod.GET,
-                        entity9,
-                        Group5ProductResponse[].class
-                );
-
-                if (response9.getStatusCode() == HttpStatus.OK && response9.getBody() != null) {
-                    Group5ProductResponse[] products = response9.getBody();
-                    processGroup5Products(products, groupId);
-                    System.out.println("Försök 9 lyckades!");
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 9 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            // Försök 10: x-functions-key header (Azure Functions API Key)
-            HttpHeaders headers10 = new HttpHeaders();
-            headers10.set("x-functions-key", group5ApiKey);
-            // Lägg till standard Accept och Content-Type headers
-            headers10.setContentType(MediaType.APPLICATION_JSON);
-            headers10.set("Accept", "application/json");
-
-            HttpEntity<String> entity10 = new HttpEntity<>(headers10);
-
-            try {
-                System.out.println("Försök 10: x-functions-key (Azure Function): " + group5ApiKey);
-                ResponseEntity<Group5ProductResponse[]> response10 = restTemplate.exchange(
-                        endpoint,
-                        HttpMethod.GET,
-                        entity10,
-                        Group5ProductResponse[].class
-                );
-
-                if (response10.getStatusCode() == HttpStatus.OK && response10.getBody() != null) {
-                    Group5ProductResponse[] products = response10.getBody();
-                    processGroup5Products(products, groupId);
-                    System.out.println("Försök 10 lyckades!");
-                    return;
-                }
-            } catch (Exception e) {
-                System.out.println("Försök 10 för grupp 5 misslyckades: " + e.getMessage());
-            }
-
-            System.err.println("Alla försök att komma åt grupp 5:s API misslyckades.");
-            throw new RuntimeException("Kunde inte hitta rätt sätt att autentisera mot grupp 5:s API");
-
         } catch (Exception e) {
-            throw e;
+            throw new RuntimeException("Kunde inte ansluta till grupp 5:s API: " + e.getMessage(), e);
         }
     }
 
@@ -412,7 +199,7 @@ public class ProductFetchService {
 
             if (!hasEnoughReviews(product.getId())) {
                 String weather = "soligt"; // Ersätt med faktiskt väder
-                aiReviewService.generateReviewFromExternalProduct(extProduct, weather);
+                aiReviewService.generateReviewWithGroup(product.getName(), weather, groupId);
             }
         }
 
@@ -426,7 +213,7 @@ public class ProductFetchService {
 
             if (!hasEnoughReviews(product.getId())) {
                 String weather = "soligt"; // Ersätt med faktiskt väder
-                aiReviewService.generateReview(product.getName(), weather);
+                aiReviewService.generateReviewWithGroup(product.getName(), weather, groupId);
             }
         }
 
@@ -455,7 +242,14 @@ public class ProductFetchService {
     private Product mapGroup5ToProduct(Group5ProductResponse extProduct, String groupId) {
         Product product = new Product();
         product.setId(extProduct.getId());
-        product.setName(extProduct.getName());
+
+        // FIX: Sätt ett standardnamn om inget namn finns
+        if (extProduct.getName() == null || extProduct.getName().trim().isEmpty()) {
+            product.setName("Produkt från Grupp 5 - " + extProduct.getId());
+        } else {
+            product.setName(extProduct.getName());
+        }
+
         product.setDescription("Product from Group 5"); // Default beskrivning
         product.setPrice(BigDecimal.ZERO); // Default pris
         product.setGroupId(groupId);
@@ -463,6 +257,7 @@ public class ProductFetchService {
         // Skapa ett Map för attributes med standard/tomma värden
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("source", "group5");
+        attributes.put("original_id", extProduct.getId()); // Spara original-ID som ett attribut
 
         product.setAttributes(attributes);
 
@@ -471,7 +266,7 @@ public class ProductFetchService {
 
     private boolean hasEnoughReviews(String productId) {
         long count = reviewRepository.countByProductId(productId);
-        return count >= 5;
+        return count > 0;  // Ändrat från "count >= 5" till "count > 0"
     }
 
     // Manuell trigger
