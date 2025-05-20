@@ -15,6 +15,7 @@ import se.reviewservice.mongoDB.service.ReviewService;
 import java.util.List;
 import java.util.Optional;
 
+@Hidden
 @RestController
 @RequestMapping("/api/v1/reviews")
 @Tag(name = "Reviews", description = "API för att hantera recensioner")
