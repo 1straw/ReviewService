@@ -1,9 +1,9 @@
 package se.reviewservice.mongoDB.security;
-import org.springframework.http.HttpMethod;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -28,19 +28,30 @@ public class WebSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Tillåt Swagger UI och dess resurser utan autentisering
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Tillåt ALLA Swagger-relaterade resurser utan autentisering
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
+                                "/swagger-resources/**", "/webjars/**").permitAll()
                         // Tillåt inloggning utan autentisering
                         .requestMatchers("/api/auth/login").permitAll()
-                        // OBS! Vi tar bort /api/auth/register från permitAll för att blockera publik registrering
-                        // .requestMatchers("/api/auth/register").permitAll()
-                        // Lägg till specialendpoints för GET-anrop
-                        .requestMatchers("GET", "/api/v1/products/*/reviews").hasAnyRole("USER", "ADMIN", "FRONTEND_GROUP")
-                        // Lägg till specialregler för vilka roller som kan ändra data
-                        .requestMatchers(HttpMethod.GET, "/api/v1/products/*/reviews").hasAnyRole("USER", "ADMIN", "FRONTEND_GROUP") // eller begränsa om du vill
-                        .requestMatchers(HttpMethod.POST, "/api/v1/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/**").hasAnyRole("USER", "ADMIN")
+
+                        // VIKTIGT: Lägg till tillåtelse för debug-endpointerna
+                        .requestMatchers("/api/debug/**").permitAll()
+
+                        // För testning: tillåt alla GET-förfrågningar på product reviews utan autentisering
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/group-reviews").permitAll()
+
+                        // API-vägar som är tillgängliga via API-nyckel (bara GET)
+                        // Kommenterad för att tillåta testing utan autentisering
+                        // .requestMatchers(HttpMethod.GET, "/api/v1/products/reviews").hasAnyAuthority(
+                        //         "ROLE_GROUP4", "ROLE_GROUP5", "ROLE_GROUP6", "ROLE_ADMIN", "ROLE_FRONTEND_GROUP")
+                        // .requestMatchers(HttpMethod.GET, "/api/v1/products/all-reviews").hasAnyAuthority(
+                        //         "ROLE_GROUP4", "ROLE_GROUP5", "ROLE_GROUP6", "ROLE_ADMIN", "ROLE_FRONTEND_GROUP")
+
+                        // Blockera alla andra HTTP-metoder från API-nyckelanvändare
+                        .requestMatchers(HttpMethod.POST, "/api/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAuthority("ROLE_ADMIN")
 
                         // Alla andra anrop kräver autentisering
                         .anyRequest().authenticated())

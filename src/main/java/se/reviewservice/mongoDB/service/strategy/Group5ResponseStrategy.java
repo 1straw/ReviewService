@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import se.reviewservice.dto.Group5Review;
 import se.reviewservice.mongoDB.model.Review;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,7 +13,15 @@ public class Group5ResponseStrategy implements GroupResponseStrategy {
 
     @Override
     public boolean supports(String group) {
-        return "group5".equalsIgnoreCase(group);
+        // Normalisera gruppnamnet
+        if (group == null) return false;
+
+        String normalizedGroup = group.toLowerCase();
+        if (normalizedGroup.startsWith("role_")) {
+            normalizedGroup = normalizedGroup.substring(5);
+        }
+
+        return "group5".equals(normalizedGroup);
     }
 
     @Override
@@ -24,13 +33,37 @@ public class Group5ResponseStrategy implements GroupResponseStrategy {
 
     private Group5Review mapToGroup5Review(Review review, String productId) {
         Group5Review g5Review = new Group5Review();
+
+        // Sätt grundläggande fält
         g5Review.setReviewId(review.getId());
         g5Review.setProductId(productId);
-        g5Review.setReviewerName(review.getReviewerName());
-        g5Review.setReviewTitle(review.getTitle());
-        g5Review.setReviewContent(review.getComment());
         g5Review.setRating(review.getRating());
-        g5Review.setCreationDate(review.getDate());
+        g5Review.setReviewContent(review.getComment());
+
+        // Formatera namn - använd bara förnamn och första bokstaven i efternamnet
+        String fullName = review.getReviewerName();
+        String formattedName;
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            String[] nameParts = fullName.split(" ");
+            if (nameParts.length > 1) {
+                formattedName = nameParts[0] + " " + nameParts[1].charAt(0) + ".";
+            } else {
+                formattedName = nameParts[0];
+            }
+        } else {
+            formattedName = "Anonymous";
+        }
+        g5Review.setReviewerName(formattedName);
+
+        // Formatera datum (Mar 2025)
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
+        String formattedDate = review.getDate().format(formatter);
+        g5Review.setFormattedDate(formattedDate);
+
+        // Skapa formaterad recension enligt exempel: "Text" – Name, Date
+        String formattedReview = "\"" + review.getComment() + "\" – " + formattedName + ", " + formattedDate;
+        g5Review.setFormattedReview(formattedReview);
+
         return g5Review;
     }
 }

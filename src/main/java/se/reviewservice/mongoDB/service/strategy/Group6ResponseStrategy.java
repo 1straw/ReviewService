@@ -13,7 +13,15 @@ public class Group6ResponseStrategy implements GroupResponseStrategy {
 
     @Override
     public boolean supports(String group) {
-        return "group6".equalsIgnoreCase(group);
+        // Normalisera gruppnamnet
+        if (group == null) return false;
+
+        String normalizedGroup = group.toLowerCase();
+        if (normalizedGroup.startsWith("role_")) {
+            normalizedGroup = normalizedGroup.substring(5);
+        }
+
+        return "group6".equals(normalizedGroup);
     }
 
     @Override
