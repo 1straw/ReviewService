@@ -1,6 +1,7 @@
 package se.reviewservice.mongoDB.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +15,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-@Hidden
+
 @RestController
 @RequestMapping("/api/v1")
+@Tag(name = "Group Reviews", description = "API för att hämta recensioner per grupp")
 public class GroupReviewController {
 
     @Autowired
@@ -29,6 +31,8 @@ public class GroupReviewController {
     private List<GroupResponseStrategy> responseStrategies;
 
     @GetMapping("/group-reviews")
+    @Operation(summary = "Hämta recensioner för en specifik grupp",
+            description = "Returnerar alla recensioner för produkter som tillhör den angivna gruppen")
     public ResponseEntity<?> getReviewsForGroup(@RequestParam String group) {
         // Normalisera gruppnamnet
         String normalizedGroup = normalizeGroupName(group);

@@ -1,10 +1,10 @@
 package se.reviewservice.mongoDB.service.strategy;
 
 import org.springframework.stereotype.Component;
-import se.reviewservice.dto.Group6Response;
 import se.reviewservice.dto.Group6Review;
 import se.reviewservice.mongoDB.model.Review;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,32 +26,23 @@ public class Group6ResponseStrategy implements GroupResponseStrategy {
 
     @Override
     public Object buildResponse(List<Review> reviews, String productId) {
-        // Beräkna genomsnittligt betyg
-        double averageRating = reviews.isEmpty() ? 0.0 :
-                reviews.stream()
-                        .mapToInt(Review::getRating)
-                        .average()
-                        .orElse(0.0);
-
-        // Mappa recensioner till Group6Review format
-        List<Group6Review> group6Reviews = reviews.stream()
-                .map(this::mapToGroup6Review)
+        return reviews.stream()
+                .map(review -> mapToGroup6Review(review))
                 .collect(Collectors.toList());
-
-        // Skapa responsobjekt
-        Group6Response response = new Group6Response();
-        response.setAverageRating(averageRating);
-        response.setReviews(group6Reviews);
-
-        return response;
     }
 
     private Group6Review mapToGroup6Review(Review review) {
         Group6Review g6Review = new Group6Review();
-        g6Review.setText(review.getComment());
-        g6Review.setRating(review.getRating());
-        g6Review.setReviewerName(review.getReviewerName());
-        g6Review.setReviewDate(review.getDate());
+
+        // EXAKT de 4 fält som Grupp 6 vill ha
+        g6Review.setSnittbetyg(review.getRating());              // Snittbetyg 1-5 (stjärnor)
+        g6Review.setSkriftligReview(review.getComment());        // Skriftlig review
+        g6Review.setNamnPaReviewer(review.getReviewerName());    // Namn på reviewer
+
+        // Datum/tid när review skrevs - format: 2025-05-22 14:30:15
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        g6Review.setDatumTid(review.getDate().atStartOfDay().format(formatter));
+
         return g6Review;
     }
 }

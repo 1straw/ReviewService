@@ -6,9 +6,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 import se.reviewservice.dto.ExternalProductResponse;
 import se.reviewservice.dto.Group5ProductResponse;
+import se.reviewservice.dto.Group6ProductResponse;
 import se.reviewservice.mongoDB.model.Product;
 import se.reviewservice.mongoDB.repository.ProductRepository;
 import se.reviewservice.mongoDB.repository.ReviewRepository;
@@ -36,12 +36,13 @@ public class ProductFetchService {
     private final Map<String, String> groupEndpoints = Map.of(
             "group4", "https://merchstorecontainer.happycliff-80f98edc.swedencentral.azurecontainerapps.io/api/basic/products",
             "group5", "https://reviewapiv2250506.azurewebsites.net/api/products/simple",
-            "group6", "URL_FÖR_GRUPP_6_HÄR"
+            "group6", "https://fanta-stick-six.azurewebsites.net/api/basic/products"
     );
 
     // API-nycklar för grupper
     private final String group4ApiKey = "API_KEY"; // API-nyckel från grupp 4
     private final String group5ApiKey = "ItHurtWhenIPee"; // API-nyckel för grupp 5
+    private final String group6ApiKey = "Merchstore_ApiKey"; // API-nyckel för grupp 6
 
     @Scheduled(fixedRate = 86400000) // Kör en gång per dag
     public void fetchAllProductsFromGroups() {
@@ -61,6 +62,9 @@ public class ProductFetchService {
             } else if (groupId.equals("group4")) {
                 // Specialhantering för Grupp 4 med API-nyckel
                 fetchGroup4Products(endpoint, groupId);
+            } else if (groupId.equals("group6")) {
+                // Specialhantering för Grupp 6 med API-nyckel
+                fetchGroup6Products(endpoint, groupId);
             } else {
                 // Standardhantering för övriga grupper utan API-nyckel
                 fetchStandardProducts(endpoint, groupId);
@@ -131,34 +135,25 @@ public class ProductFetchService {
     }
 
     private void fetchStandardProducts(String endpoint, String groupId) {
-        // Kontrollera om det är platshållaren för grupp 6
-        if (groupId.equals("group6") && endpoint.equals("URL_FÖR_GRUPP_6_HÄR")) {
-            System.err.println("Ingen giltig URL tillgänglig för grupp 6. Skippar...");
-            throw new IllegalArgumentException("Ingen giltig URL för grupp 6");
-        }
+        // Kontrollera om det är platshållaren för andra grupper
+        System.out.println("Standard produkthämtning för grupp: " + groupId);
 
-        ResponseEntity<?> response;
+        try {
+            ResponseEntity<Object[]> response = restTemplate.getForEntity(endpoint, Object[].class);
 
-        if (groupId.equals("group6")) {
-            // Grupp 6 format - implementera när du har information
-            try {
-                response = restTemplate.getForEntity(endpoint, Object[].class);
-
-                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                    Object[] products = (Object[]) response.getBody();
-                    System.out.println("Fetched " + products.length + " products for group " + groupId);
-                    // Implementera processGroup6Products när du har information
-                }
-            } catch (Exception e) {
-                System.err.println("Error fetching products for group " + groupId + ": " + e.getMessage());
-                throw e;
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Object[] products = response.getBody();
+                System.out.println("Fetched " + products.length + " products for group " + groupId);
+                // Implementera processStandardProducts när du har information
             }
+        } catch (Exception e) {
+            System.err.println("Error fetching products for group " + groupId + ": " + e.getMessage());
+            throw e;
         }
     }
 
     private void fetchGroup5Products(String endpoint, String groupId) {
         try {
-            // Använd bara det format som vi vet fungerar
             HttpHeaders headers = new HttpHeaders();
             headers.set("x-functions-key", group5ApiKey);
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -177,11 +172,14 @@ public class ProductFetchService {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 Group5ProductResponse[] products = response.getBody();
 
-                // Logga alla produkter för att se vad API:et faktiskt returnerar
+                // BÄTTRE LOGGNING: Logga alla produkter för att se vad API:et faktiskt returnerar
+                System.out.println("=== GRUPP 5 API RESPONSE ===");
                 for (Group5ProductResponse product : products) {
-                    System.out.println("Produkt från grupp 5 API - ID: " + product.getId() +
-                            ", Namn: " + product.getName());
+                    System.out.println("Raw response - ID: '" + product.getId() + "', Name: '" + product.getName() + "'");
+                    System.out.println("Name is null: " + (product.getName() == null));
+                    System.out.println("Name is empty: " + (product.getName() != null && product.getName().trim().isEmpty()));
                 }
+                System.out.println("=== END GRUPP 5 API RESPONSE ===");
 
                 processGroup5Products(products, groupId);
                 System.out.println("Lyckades hämta " + products.length + " produkter från grupp 5");
@@ -192,6 +190,41 @@ public class ProductFetchService {
         }
     }
 
+    private void fetchGroup6Products(String endpoint, String groupId) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-API-Key", group6ApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Accept", "application/json");
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            System.out.println("Försöker hämta produkter från grupp 6 med X-API-Key: " + group6ApiKey);
+            ResponseEntity<Group6ProductResponse[]> response = restTemplate.exchange(
+                    endpoint,
+                    HttpMethod.GET,
+                    entity,
+                    Group6ProductResponse[].class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Group6ProductResponse[] products = response.getBody();
+
+                System.out.println("=== GRUPP 6 API RESPONSE ===");
+                for (Group6ProductResponse product : products) {
+                    System.out.println("Raw response - ID: '" + product.getId() + "', Name: '" + product.getName() + "'");
+                }
+                System.out.println("=== END GRUPP 6 API RESPONSE ===");
+
+                processGroup6Products(products, groupId);
+                System.out.println("Lyckades hämta " + products.length + " produkter från grupp 6");
+                return;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Kunde inte ansluta till grupp 6:s API: " + e.getMessage(), e);
+        }
+    }
+
     private void processGroup4Products(ExternalProductResponse[] products, String groupId) {
         for (ExternalProductResponse extProduct : products) {
             Product product = mapGroup4ToProduct(extProduct, groupId);
@@ -199,7 +232,7 @@ public class ProductFetchService {
 
             if (!hasEnoughReviews(product.getId())) {
                 String weather = "soligt"; // Ersätt med faktiskt väder
-                aiReviewService.generateReviewWithGroup(product.getName(), weather, groupId);
+                aiReviewService.generateReviewWithGroup(product.getName(), weather, groupId, product.getId());
             }
         }
 
@@ -213,7 +246,23 @@ public class ProductFetchService {
 
             if (!hasEnoughReviews(product.getId())) {
                 String weather = "soligt"; // Ersätt med faktiskt väder
-                aiReviewService.generateReviewWithGroup(product.getName(), weather, groupId);
+                // VIKTIGT: Skicka med det riktiga product.getId() som sista parameter
+                aiReviewService.generateReviewWithGroup(product.getName(), weather, groupId, product.getId());
+            }
+        }
+
+        System.out.println("Processed " + products.length + " products for group " + groupId);
+    }
+
+    private void processGroup6Products(Group6ProductResponse[] products, String groupId) {
+        for (Group6ProductResponse extProduct : products) {
+            Product product = mapGroup6ToProduct(extProduct, groupId);
+            productRepository.save(product);
+
+            if (!hasEnoughReviews(product.getId())) {
+                String weather = "soligt"; // Ersätt med faktiskt väder
+                // Skicka med det riktiga product.getId() som sista parameter
+                aiReviewService.generateReviewWithGroup(product.getName(), weather, groupId, product.getId());
             }
         }
 
@@ -243,21 +292,36 @@ public class ProductFetchService {
         Product product = new Product();
         product.setId(extProduct.getId());
 
-        // FIX: Sätt ett standardnamn om inget namn finns
-        if (extProduct.getName() == null || extProduct.getName().trim().isEmpty()) {
-            product.setName("Produkt från Grupp 5 - " + extProduct.getId());
-        } else {
-            product.setName(extProduct.getName());
-        }
+        // Nu ska namnet komma korrekt från API:et tack vare @JsonProperty mappningen
+        product.setName(extProduct.getName());
 
-        product.setDescription("Product from Group 5"); // Default beskrivning
-        product.setPrice(BigDecimal.ZERO); // Default pris
+        System.out.println("Mapping product - ID: " + extProduct.getId() + ", Name: '" + extProduct.getName() + "'");
+
+        product.setDescription("Product from Group 5");
+        product.setPrice(BigDecimal.ZERO);
         product.setGroupId(groupId);
 
-        // Skapa ett Map för attributes med standard/tomma värden
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("source", "group5");
-        attributes.put("original_id", extProduct.getId()); // Spara original-ID som ett attribut
+        attributes.put("original_id", extProduct.getId());
+        product.setAttributes(attributes);
+
+        return product;
+    }
+
+    private Product mapGroup6ToProduct(Group6ProductResponse extProduct, String groupId) {
+        Product product = new Product();
+        product.setId(extProduct.getId());
+        product.setName(extProduct.getName());
+        product.setDescription(extProduct.getDescription());
+        product.setPrice(extProduct.getPrice());
+        product.setGroupId(groupId);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("currency", extProduct.getCurrency());
+        attributes.put("image_url", extProduct.getImageUrl());
+        attributes.put("stock_quantity", extProduct.getStockQuantity());
+        attributes.put("in_stock", extProduct.getInStock());
 
         product.setAttributes(attributes);
 

@@ -34,36 +34,28 @@ public class Group5ResponseStrategy implements GroupResponseStrategy {
     private Group5Review mapToGroup5Review(Review review, String productId) {
         Group5Review g5Review = new Group5Review();
 
-        // Sätt grundläggande fält
+        // ENDAST de 7 fält som Grupp 5 vill ha
         g5Review.setReviewId(review.getId());
         g5Review.setProductId(productId);
-        g5Review.setRating(review.getRating());
+        g5Review.setReviewerName(formatReviewerName(review.getReviewerName()));
+        g5Review.setReviewTitle(review.getTitle() != null ? review.getTitle() : "Review");
         g5Review.setReviewContent(review.getComment());
+        g5Review.setRating(review.getRating());
+        g5Review.setCreationDate(review.getDate().toString()); // Format: 2025-05-22
 
-        // Formatera namn - använd bara förnamn och första bokstaven i efternamnet
-        String fullName = review.getReviewerName();
-        String formattedName;
+        return g5Review;
+    }
+
+    private String formatReviewerName(String fullName) {
         if (fullName != null && !fullName.trim().isEmpty()) {
             String[] nameParts = fullName.split(" ");
             if (nameParts.length > 1) {
-                formattedName = nameParts[0] + " " + nameParts[1].charAt(0) + ".";
+                return nameParts[0] + " " + nameParts[1].charAt(0) + ".";
             } else {
-                formattedName = nameParts[0];
+                return nameParts[0];
             }
         } else {
-            formattedName = "Anonymous";
+            return "Anonymous";
         }
-        g5Review.setReviewerName(formattedName);
-
-        // Formatera datum (Mar 2025)
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
-        String formattedDate = review.getDate().format(formatter);
-        g5Review.setFormattedDate(formattedDate);
-
-        // Skapa formaterad recension enligt exempel: "Text" – Name, Date
-        String formattedReview = "\"" + review.getComment() + "\" – " + formattedName + ", " + formattedDate;
-        g5Review.setFormattedReview(formattedReview);
-
-        return g5Review;
     }
 }
