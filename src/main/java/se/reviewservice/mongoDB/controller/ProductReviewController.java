@@ -1,12 +1,13 @@
 package se.reviewservice.mongoDB.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import se.reviewservice.mongoDB.service.ProductReviewService;
-
+@Hidden
 @RestController
 @RequestMapping("/api/v1/products")
 public class ProductReviewController {

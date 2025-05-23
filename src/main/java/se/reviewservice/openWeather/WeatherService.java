@@ -14,12 +14,20 @@ public class WeatherService {
     public WeatherService(WebClient webClient) {
         this.webClient = webClient;
 
-        // Försök hämta API-nyckeln från .env
-        Dotenv dotenv = Dotenv.load();
-        String envApiKey = dotenv.get("OPEN_WEATHER_API_KEY");
+        Dotenv dotenv = null;
+        try {
+            dotenv = Dotenv.load();
+        } catch (Exception ignored) {
+            // Dotenv kanske inte finns i containern
+        }
+        String apiKey = dotenv != null ? dotenv.get("OPEN_WEATHER_API_KEY") : null;
+//        Dotenv dotenv = Dotenv.load();
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = System.getenv("OPEN_WEATHER_API_KEY");
+        }
 
         // Om .env saknar API-nyckeln, hämta den från systemets miljövariabler
-        this.apiKey = envApiKey != null ? envApiKey : System.getenv("OPEN_WEATHER_API_KEY");
+        this.apiKey = apiKey != null ? apiKey : System.getenv("OPEN_WEATHER_API_KEY");
 
     }
 
