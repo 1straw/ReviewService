@@ -31,17 +31,24 @@ public class AiReviewService {
     }
 
     public String generateReview(String productName, String weather) {
-        return generateReviewWithGroup(productName, weather, null);
+        return generateReviewWithGroup(productName, weather, null, null);
     }
 
+    // BEHÅLL GAMLA METODEN för bakåtkompatibilitet
     public String generateReviewWithGroup(String productName, String weather, String groupId) {
+        return generateReviewWithGroup(productName, weather, groupId, null);
+    }
+
+    // NY METOD: med productId parameter
+    public String generateReviewWithGroup(String productName, String weather, String groupId, String productId) {
         // Hantera null eller tomt produktnamn
+        String actualProductName = productName;
         if (productName == null || productName.trim().isEmpty()) {
             if (groupId != null && groupId.equalsIgnoreCase("group5")) {
                 // För grupp 5, använd en generisk produktbeskrivning utan att nämna "Grupp 5"
-                productName = "produkten";
+                actualProductName = "produkten";
             } else {
-                productName = "produkten";
+                actualProductName = "produkten";
             }
             System.out.println("Använder generiskt produktnamn eftersom inget namn finns");
         }
@@ -88,10 +95,11 @@ public class AiReviewService {
             """;
         }
 
-        String prompt = String.format(promptTemplate, productName, weather);
+        String prompt = String.format(promptTemplate, actualProductName, weather);
         String response = claudeClient.askClaude(prompt);
 
-        List<Review> reviews = parseReviews(response, productName);
+        // UPPDATERING: Skicka med productId till parseReviews
+        List<Review> reviews = parseReviews(response, actualProductName, productId);
         reviews.forEach(reviewRepository::save);
 
         return "Claude generated and saved " + reviews.size() + " reviews.";
@@ -152,13 +160,14 @@ public class AiReviewService {
         }
 
         String response = claudeClient.askClaude(prompt);
-        List<Review> reviews = parseReviews(response, product.getName());
+        List<Review> reviews = parseReviews(response, product.getName(), product.getId());
         reviews.forEach(reviewRepository::save);
 
         return "Claude generated and saved " + reviews.size() + " reviews.";
     }
 
-    private List<Review> parseReviews(String response, String productName) {
+    // UPPDATERAD METOD: Lägg till productId parameter
+    private List<Review> parseReviews(String response, String productName, String actualProductId) {
         Pattern pattern = Pattern.compile(
                 "Namn: (.+?)\\s*Betyg: (\\d)\\s*Recension: (.+?)(?=\\n{2}|$)",
                 Pattern.DOTALL
@@ -172,10 +181,10 @@ public class AiReviewService {
                     String text = match.group(3).trim();
 
                     // Skapa produkt för recensionen
-                    String productId = UUID.randomUUID().toString();
+                    String tempProductId = UUID.randomUUID().toString();
 
                     Product product = new Product(
-                            productId,                   // id
+                            tempProductId,               // id
                             productName,                 // name
                             "Automatiskt genererad produktbeskrivning", // description
                             BigDecimal.ZERO,             // price
@@ -193,8 +202,14 @@ public class AiReviewService {
                             Instant.now()                // createdAt
                     );
 
-                    // Sätt productId till produktnamnet manuellt
-                    review.setProductId(productName);
+                    // VIKTIGT: Använd det riktiga productId:t från databasen, inte produktnamnet
+                    if (actualProductId != null && !actualProductId.trim().isEmpty()) {
+                        review.setProductId(actualProductId);
+                        System.out.println("Sätter productId till: " + actualProductId);
+                    } else {
+                        review.setProductId(productName);
+                        System.out.println("Använder produktnamn som productId: " + productName);
+                    }
 
                     // Sätt alla relevanta fält explicit
                     review.setReviewerName(name);
@@ -205,6 +220,11 @@ public class AiReviewService {
 
                     return review;
                 }).toList();
+    }
+
+    // ÖVERLAGD METOD för bakåtkompatibilitet
+    private List<Review> parseReviews(String response, String productName) {
+        return parseReviews(response, productName, null);
     }
 
     public String generateReviewFromIncomingProduct(IncomingProductRequest product, String weather) {
