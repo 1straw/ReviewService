@@ -9,6 +9,7 @@ import se.reviewservice.mongoDB.model.Product;
 import se.reviewservice.mongoDB.model.Review;
 import se.reviewservice.mongoDB.model.ReviewDetails;
 import se.reviewservice.mongoDB.repository.ReviewRepository;
+import se.reviewservice.openWeather.WeatherService;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -24,14 +25,20 @@ public class AiReviewService {
 
     private final ClaudeClient claudeClient;
     private final ReviewRepository reviewRepository;
+    private final WeatherService weatherService;
 
-    public AiReviewService(ClaudeClient claudeClient, ReviewRepository reviewRepository) {
+    public AiReviewService(ClaudeClient claudeClient, ReviewRepository reviewRepository, WeatherService weatherService) {
         this.claudeClient = claudeClient;
         this.reviewRepository = reviewRepository;
+        this.weatherService = weatherService;
     }
 
     public String generateReview(String productName, String weather) {
         return generateReviewWithGroup(productName, weather, null, null);
+    }
+    public String generateReviewUsingLiveWeather(String productName, String lat, String lon, String groupId) {
+        String weather = weatherService.getWeatherStockholm(lat, lon).block(); // Hämtar väder synkront
+        return generateReviewWithGroup(productName, weather, groupId); // Ai-generering med vädret
     }
 
     // BEHÅLL GAMLA METODEN för bakåtkompatibilitet
