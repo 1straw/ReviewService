@@ -37,5 +37,18 @@ public class AiReviewController {
     public String generateReviewFromIncomingProduct(@RequestBody IncomingProductRequest request, @RequestParam String weather) {
         return reviewService.generateReviewFromIncomingProduct(request, weather);
     }
+    @PostMapping("/generate/live")
+    public String generateReviewWithLiveWeather(
+            @RequestParam String productName,
+            @RequestParam(required = false) String lat,
+            @RequestParam(required = false) String lon,
+            @RequestParam(required = false) String groupId
+    ) {
+        if(lat == null || lon == null) {
+            lat = "59.3251172"; // Stockholm default
+            lon = "18.0710935";
+        }
+        return reviewService.generateReviewUsingLiveWeather(productName, lat, lon, groupId);
+    }
 
 }

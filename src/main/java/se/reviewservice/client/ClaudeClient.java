@@ -39,7 +39,7 @@ public class ClaudeClient {
     public String askClaude(String prompt) {
         Map<String, Object> body = Map.of(
                 "model", "claude-3-haiku-20240307",
-                "max_tokens", 512,
+                "max_tokens", 4096,
                 "messages", new Object[] {
                         Map.of("role", "user", "content", prompt)
                 }

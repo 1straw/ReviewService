@@ -34,24 +34,21 @@ public class WebSecurityConfig {
                         // Tillåt inloggning utan autentisering
                         .requestMatchers("/api/auth/login").permitAll()
 
-                        // VIKTIGT: Lägg till tillåtelse för debug-endpointerna
-                        .requestMatchers("/api/debug/**").permitAll()
-
-                        // För testning: tillåt alla GET-förfrågningar på product reviews utan autentisering
-                        .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/group-reviews").permitAll()
-
-                        // API-vägar som är tillgängliga via API-nyckel (bara GET)
-                        // Kommenterad för att tillåta testing utan autentisering
-                        // .requestMatchers(HttpMethod.GET, "/api/v1/products/reviews").hasAnyAuthority(
-                        //         "ROLE_GROUP4", "ROLE_GROUP5", "ROLE_GROUP6", "ROLE_ADMIN", "ROLE_FRONTEND_GROUP")
-                        // .requestMatchers(HttpMethod.GET, "/api/v1/products/all-reviews").hasAnyAuthority(
-                        //         "ROLE_GROUP4", "ROLE_GROUP5", "ROLE_GROUP6", "ROLE_ADMIN", "ROLE_FRONTEND_GROUP")
+                        // API-vägar som kräver autentisering och specifika roller
+                        .requestMatchers(HttpMethod.GET, "/api/v1/group-reviews")
+                        .hasAnyAuthority("ROLE_GROUP4", "GROUP4", "ROLE_GROUP5", "GROUP5", "ROLE_GROUP6", "GROUP6",
+                                "ROLE_ADMIN", "ADMIN", "group4", "group5", "group6")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/reviews")
+                        .hasAnyAuthority("ROLE_GROUP4", "GROUP4", "ROLE_GROUP5", "GROUP5", "ROLE_GROUP6", "GROUP6",
+                                "ROLE_ADMIN", "ADMIN", "group4", "group5", "group6")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/all-reviews")
+                        .hasAnyAuthority("ROLE_GROUP4", "GROUP4", "ROLE_GROUP5", "GROUP5", "ROLE_GROUP6", "GROUP6",
+                                "ROLE_ADMIN", "ADMIN", "group4", "group5", "group6")
 
                         // Blockera alla andra HTTP-metoder från API-nyckelanvändare
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
 
                         // Alla andra anrop kräver autentisering
                         .anyRequest().authenticated())

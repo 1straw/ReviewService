@@ -3,14 +3,11 @@ package se.reviewservice.mongoDB.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import se.reviewservice.dto.ReviewRequest;
 import se.reviewservice.mongoDB.model.Product;
 import se.reviewservice.mongoDB.model.Review;
 import se.reviewservice.mongoDB.repository.ProductRepository;
 import se.reviewservice.mongoDB.repository.ReviewRepository;
 import se.reviewservice.mongoDB.service.strategy.Group4ResponseStrategy;
-import se.reviewservice.mongoDB.service.strategy.Group5ResponseStrategy;
-import se.reviewservice.mongoDB.service.strategy.Group6ResponseStrategy;
 import se.reviewservice.mongoDB.service.strategy.GroupResponseStrategy;
 
 import java.util.ArrayList;
@@ -40,7 +37,6 @@ public class ProductReviewService {
     public ResponseEntity<?> getReviewsForGroup(String productId, String group, int limit, int offset) {
         // Normalisera gruppnamnet
         String normalizedGroup = normalizeGroupName(group);
-        System.out.println("getReviewsForGroup - productId: " + productId + ", group: " + normalizedGroup);
 
         if (productId == null || productId.isEmpty()) {
             return ResponseEntity.badRequest().body("Product ID is required");
@@ -61,44 +57,30 @@ public class ProductReviewService {
         List<Review> reviews = new ArrayList<>();
 
         // Metod 1: Sök med produkt-ID
-        System.out.println("Debug - sökande efter recensioner med produktID: " + product.getId());
         List<Review> reviewsById = reviewRepository.findByProductId(product.getId());
         reviews.addAll(reviewsById);
 
         // Metod 2: Sök med produktnamn
         List<Review> reviewsByName = new ArrayList<>();
         if (product.getName() != null && !product.getName().isEmpty()) {
-            System.out.println("Debug - sökande efter recensioner med produktNamn: " + product.getName());
             reviewsByName = reviewRepository.findByProductId(product.getName());
             reviews.addAll(reviewsByName);
-        } else {
-            System.out.println("Produkten har inget namn, söker bara på ID: " + product.getId());
         }
-
-        System.out.println("Hittade " + reviewsById.size() + " recensioner med produkt-ID");
-        System.out.println("Hittade " + reviewsByName.size() + " recensioner med produktnamn");
-        System.out.println("Totalt " + reviews.size() + " recensioner");
 
         // Om inga recensioner finns, använd AI för att generera
         if (reviews.isEmpty()) {
-            // Skapa en enkel vädertext - i ett riktigt system skulle detta komma från en vädertjänst
             String weather = "soligt och " + (20 + (int)(Math.random() * 10)) + " grader";
-
-            // Använd befintlig AI-tjänst för att generera recensioner
             aiReviewService.generateReviewWithGroup(product.getName(), weather, normalizedGroup, product.getId());
 
             // Hämta de nya recensionerna från databasen
             reviewsById = reviewRepository.findByProductId(product.getId());
-            reviewsByName = new ArrayList<>();
-
             reviews = new ArrayList<>(reviewsById);
 
+            reviewsByName = new ArrayList<>();
             if (product.getName() != null && !product.getName().isEmpty()) {
                 reviewsByName = reviewRepository.findByProductId(product.getName());
                 reviews.addAll(reviewsByName);
             }
-
-            System.out.println("Efter generering, hittade " + reviews.size() + " recensioner");
         }
 
         // Filtrera recensioner baserat på limit och offset
@@ -108,28 +90,14 @@ public class ProductReviewService {
                 .collect(Collectors.toList());
 
         // Hitta rätt strategy för gruppen
-        GroupResponseStrategy matchingStrategy = null;
-        for (GroupResponseStrategy strategy : responseStrategies) {
-            if (strategy.supports(normalizedGroup)) {
-                matchingStrategy = strategy;
-                System.out.println("Använder strategy: " + strategy.getClass().getSimpleName());
-                break;
-            }
-        }
+        GroupResponseStrategy matchingStrategy = findStrategyForGroup(normalizedGroup);
 
         if (matchingStrategy == null) {
-            System.out.println("Ingen matchande strategy hittades för grupp: " + normalizedGroup);
             return ResponseEntity.badRequest().body("Unsupported group: " + normalizedGroup);
         }
 
         // SPECIELL HANTERING FÖR GRUPP 5 - returnera bara lista med recensioner
-        if (normalizedGroup.equals("group5")) {
-            Object formattedReviews = matchingStrategy.buildResponse(paginatedReviews, product.getId());
-            return ResponseEntity.ok(formattedReviews);
-        }
-
-        // SPECIELL HANTERING FÖR GRUPP 6 - returnera bara lista med recensioner
-        if (normalizedGroup.equals("group6")) {
+        if (normalizedGroup.equals("group5") || normalizedGroup.equals("group6")) {
             Object formattedReviews = matchingStrategy.buildResponse(paginatedReviews, product.getId());
             return ResponseEntity.ok(formattedReviews);
         }
@@ -149,14 +117,7 @@ public class ProductReviewService {
 
         // Formaterar recensioner enligt gruppens strategy
         Object formattedReviews = matchingStrategy.buildResponse(paginatedReviews, product.getId());
-
-        // För grupp 4, lägg reviews direkt i svaret
-        if (matchingStrategy instanceof Group4ResponseStrategy || matchingStrategy instanceof Group6ResponseStrategy) {
-            response.put("reviews", formattedReviews);
-        } else {
-            // För andra grupper, lägg till recensioner som en separat lista
-            response.put("reviews", formattedReviews);
-        }
+        response.put("reviews", formattedReviews);
 
         return ResponseEntity.ok(response);
     }
@@ -167,36 +128,27 @@ public class ProductReviewService {
     public ResponseEntity<?> getAllReviewsForGroup(String group, int limit, int offset) {
         // Normalisera gruppnamnet
         String normalizedGroup = normalizeGroupName(group);
-        System.out.println("getAllReviewsForGroup - group: " + normalizedGroup);
 
         // Hämta alla produkter för gruppen
         List<Product> products = productRepository.findByGroupId(normalizedGroup);
-        System.out.println("Hittade " + products.size() + " produkter för grupp " + normalizedGroup);
 
         if (products.isEmpty()) {
             return ResponseEntity.ok(new ArrayList<>());
         }
 
-        // SPECIELL HANTERING FÖR GRUPP 5 - returnera bara en platt lista med alla recensioner
-        if (normalizedGroup.equals("group5")) {
-            return handleGroup5Reviews(products, normalizedGroup, limit, offset);
-        }
-
-        // SPECIELL HANTERING FÖR GRUPP 6 - returnera bara en platt lista med alla recensioner
-        if (normalizedGroup.equals("group6")) {
-            return handleGroup6Reviews(products, normalizedGroup, limit, offset);
+        // SPECIELL HANTERING FÖR GRUPP 5 och GRUPP 6
+        if (normalizedGroup.equals("group5") || normalizedGroup.equals("group6")) {
+            return handleFlatReviews(products, normalizedGroup, limit, offset);
         }
 
         // Resten av koden för andra grupper (Grupp 4)
         return handleOtherGroupReviews(products, normalizedGroup, limit, offset);
     }
 
-    private ResponseEntity<?> handleGroup5Reviews(List<Product> products, String normalizedGroup, int limit, int offset) {
+    private ResponseEntity<?> handleFlatReviews(List<Product> products, String normalizedGroup, int limit, int offset) {
         List<Review> allReviews = new ArrayList<>();
 
         for (Product product : products) {
-            System.out.println("Behandlar produkt: " + product.getId() + " - " + product.getName());
-
             // Hämta recensioner för produkten
             List<Review> reviews = getReviewsForProduct(product, normalizedGroup);
             allReviews.addAll(reviews);
@@ -208,35 +160,7 @@ public class ProductReviewService {
                 .limit(limit)
                 .collect(Collectors.toList());
 
-        // Formatera recensioner enligt Group5ResponseStrategy
-        GroupResponseStrategy strategy = findStrategyForGroup(normalizedGroup);
-
-        if (strategy != null) {
-            Object formattedReviews = strategy.buildResponse(paginatedReviews, null);
-            return ResponseEntity.ok(formattedReviews);
-        }
-
-        return ResponseEntity.ok(new ArrayList<>());
-    }
-
-    private ResponseEntity<?> handleGroup6Reviews(List<Product> products, String normalizedGroup, int limit, int offset) {
-        List<Review> allReviews = new ArrayList<>();
-
-        for (Product product : products) {
-            System.out.println("Behandlar produkt: " + product.getId() + " - " + product.getName());
-
-            // Hämta recensioner för produkten
-            List<Review> reviews = getReviewsForProduct(product, normalizedGroup);
-            allReviews.addAll(reviews);
-        }
-
-        // Applicera pagination på alla recensioner
-        List<Review> paginatedReviews = allReviews.stream()
-                .skip(offset)
-                .limit(limit)
-                .collect(Collectors.toList());
-
-        // Formatera recensioner enligt Group6ResponseStrategy
+        // Formatera recensioner enligt GroupResponseStrategy
         GroupResponseStrategy strategy = findStrategyForGroup(normalizedGroup);
 
         if (strategy != null) {
@@ -251,7 +175,6 @@ public class ProductReviewService {
         GroupResponseStrategy strategy = findStrategyForGroup(normalizedGroup);
 
         if (strategy == null) {
-            System.out.println("Ingen matchande strategy hittades för grupp: " + normalizedGroup);
             return ResponseEntity.badRequest().body("Unsupported group: " + normalizedGroup);
         }
 
@@ -260,12 +183,9 @@ public class ProductReviewService {
 
         // För varje produkt, hämta recensioner och formatera enligt gruppens krav
         for (Product product : products) {
-            System.out.println("Behandlar produkt: " + product.getId() + " - " + product.getName());
-
             List<Review> reviews = getReviewsForProduct(product, normalizedGroup);
 
             if (reviews.isEmpty()) {
-                System.out.println("  Kunde inte generera recensioner, hoppar över produkt");
                 continue;
             }
 
@@ -284,15 +204,7 @@ public class ProductReviewService {
 
             // Formatera recensioner enligt gruppens strategy
             Object formattedReviews = strategy.buildResponse(reviews, product.getId());
-
-            // Anpassa svarsstrukturen för olika grupper
-            if (strategy instanceof Group4ResponseStrategy) {
-                // För grupp 4, lägg reviews direkt i svaret
-                productData.put("reviews", formattedReviews);
-            } else {
-                // Generisk hantering för andra strategier
-                productData.put("reviews", formattedReviews);
-            }
+            productData.put("reviews", formattedReviews);
 
             result.add(productData);
         }
