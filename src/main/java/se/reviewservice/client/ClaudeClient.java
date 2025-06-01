@@ -13,8 +13,7 @@ public class ClaudeClient {
     private final WebClient webClient;
 
     public ClaudeClient(WebClient.Builder builder) {
-//        Dotenv dotenv = Dotenv.load();
-//        String apiKey = dotenv.get("ANTHROPIC_API_KEY");
+
         Dotenv dotenv = null;
         try {
             dotenv = Dotenv.load();

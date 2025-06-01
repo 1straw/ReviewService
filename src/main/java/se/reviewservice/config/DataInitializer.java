@@ -3,9 +3,9 @@ package se.reviewservice.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import se.reviewservice.mongoDB.model.AuthUser;
-import se.reviewservice.mongoDB.repository.AuthUserRepository;
-import se.reviewservice.mongoDB.service.ApiKeyService;
+import se.reviewservice.model.AuthUser;
+import se.reviewservice.repository.AuthUserRepository;
+import se.reviewservice.service.ApiKeyService;
 
 import java.util.HashMap;
 import java.util.Map;
